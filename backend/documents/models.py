@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -9,6 +10,12 @@ class Document(models.Model):
         ("failed", "Failed"),
     ]
 
+    owner = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="documents",
+        null=True,
+    )
     file = models.FileField(upload_to="documents/")
     original_filename = models.CharField(max_length=255)
     document_type = models.CharField(max_length=50, blank=True)

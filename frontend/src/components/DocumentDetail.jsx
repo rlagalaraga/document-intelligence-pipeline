@@ -28,7 +28,7 @@ export default function DocumentDetail({ document, onClose }) {
 
         {/* Confidence + anomalies */}
         {(document.confidence != null || document.anomalies?.length > 0) && (
-          <div className="px-6 pt-4 pb-2 flex flex-wrap gap-3">
+          <div className="px-6 pt-4 pb-2 flex flex-wrap items-center gap-3">
             {document.confidence != null && (
               <span className={`text-xs font-medium px-3 py-1 rounded-full ${
                 document.confidence >= 0.8
@@ -40,11 +40,24 @@ export default function DocumentDetail({ document, onClose }) {
                 {Math.round(document.confidence * 100)}% confidence
               </span>
             )}
-            {document.anomalies?.map((a, i) => (
-              <span key={i} className="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-1 rounded-full">
-                ⚠ {a}
-              </span>
-            ))}
+            {document.anomalies?.length > 0 && (
+              <details className="flex-1">
+                <summary className="text-xs text-red-500 cursor-pointer select-none hover:text-red-700 list-none flex items-center gap-1">
+                  <span>⚠</span>
+                  <span>{document.anomalies.length} anomal{document.anomalies.length === 1 ? 'y' : 'ies'} detected</span>
+                  <svg className="h-3 w-3 mt-px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </summary>
+                <ul className="mt-2 space-y-1">
+                  {document.anomalies.map((a, i) => (
+                    <li key={i} className="text-xs bg-red-50 text-red-600 border border-red-200 px-3 py-1.5 rounded-lg">
+                      ⚠ {a}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
           </div>
         )}
 

@@ -18,7 +18,7 @@ from .services.extractor import extract_fields
 
 class DocumentListView(APIView):
     def get(self, request):
-        documents = Document.objects.all()
+        documents = Document.objects.filter(owner=request.user)
         serializer = DocumentSerializer(documents, many=True)
         return Response(serializer.data)
 
@@ -33,6 +33,7 @@ class DocumentUploadView(APIView):
 
         uploaded_file = request.FILES["file"]
         document = Document.objects.create(
+            owner=request.user,
             file=upload_serializer.validated_data["file"],
             original_filename=uploaded_file.name,
             status="processing",
@@ -60,14 +61,14 @@ class DocumentUploadView(APIView):
 class DocumentDetailView(APIView):
     def get(self, request, pk):
         try:
-            document = Document.objects.get(pk=pk)
+            document = Document.objects.get(pk=pk, owner=request.user)
         except Document.DoesNotExist:
             return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response(DocumentSerializer(document).data)
 
     def delete(self, request, pk):
         try:
-            document = Document.objects.get(pk=pk)
+            document = Document.objects.get(pk=pk, owner=request.user)
         except Document.DoesNotExist:
             return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
         document.file.delete(save=False)
@@ -77,15 +78,16 @@ class DocumentDetailView(APIView):
 
 class DocumentStatsView(APIView):
     def get(self, request):
-        total = Document.objects.count()
-        done = Document.objects.filter(status="done").count()
-        failed = Document.objects.filter(status="failed").count()
-        avg_confidence = Document.objects.filter(
+        qs = Document.objects.filter(owner=request.user)
+        total = qs.count()
+        done = qs.filter(status="done").count()
+        failed = qs.filter(status="failed").count()
+        avg_confidence = qs.filter(
             status="done", confidence__isnull=False
         ).aggregate(avg=Avg("confidence"))["avg"]
 
         by_type = (
-            Document.objects.filter(status="done")
+            qs.filter(status="done")
             .values("document_type")
             .annotate(count=Count("id"))
             .order_by("-count")
@@ -102,7 +104,7 @@ class DocumentStatsView(APIView):
 
 class DocumentExportView(APIView):
     def get(self, request):
-        documents = Document.objects.filter(status="done")
+        documents = Document.objects.filter(owner=request.user, status="done")
         response = HttpResponse(content_type="text/csv")
         response["Content-Disposition"] = 'attachment; filename="documents.csv"'
 
